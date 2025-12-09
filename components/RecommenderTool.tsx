@@ -182,6 +182,26 @@ const RecommenderTool: React.FC<RecommenderToolProps> = ({ programContext, setAp
     }
   }, [programContext]);
 
+  // --- Persistence for Drafts ---
+  useEffect(() => {
+      try {
+          const saved = localStorage.getItem('recommenderDrafts');
+          if (saved) {
+              setSavedDrafts(JSON.parse(saved));
+          }
+      } catch (e) {
+          console.error("Failed to load drafts", e);
+      }
+  }, []);
+
+  useEffect(() => {
+      try {
+          localStorage.setItem('recommenderDrafts', JSON.stringify(savedDrafts));
+      } catch (e) {
+          console.error("Failed to save drafts", e);
+      }
+  }, [savedDrafts]);
+
 
   // --- Intake Handler ---
   const handleIntakeSubmit = async () => {
