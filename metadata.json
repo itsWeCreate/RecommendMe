@@ -1,0 +1,7 @@
+{
+  "name": "RecLetter AI",
+  "description": "A structured recommendation letter generator with audio support and AI drafting capabilities.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
