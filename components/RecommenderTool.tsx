@@ -546,7 +546,7 @@ const RecommenderTool: React.FC<RecommenderToolProps> = ({ programContext, setAp
                             </h2>
                             <div className="flex gap-2">
                                 <a 
-                                    href="https://chatgpt.com/"
+                                    href="https://chatgpt.com/g/g-693b0a36771c8191a66137c815b2d035-recommendme"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg transition-colors flex items-center gap-1"
