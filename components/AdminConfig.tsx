@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { ProgramContext, AppMode } from "../types";
+import { ProgramContext, AppMode, Question } from "../types";
 import { generateInterviewQuestions } from "../services/geminiService";
 
 interface AdminConfigProps {
@@ -11,6 +11,7 @@ interface AdminConfigProps {
 
 const AdminConfig: React.FC<AdminConfigProps> = ({ programContext, setProgramContext, setAppMode }) => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const updateContext = (field: keyof ProgramContext, value: any) => {
@@ -104,6 +105,63 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ programContext, setProgramCon
     } catch (e) {
         console.error("Save failed:", e);
         setSaveStatus('error');
+    }
+  };
+
+  const loadFromSheets = async () => {
+    setLoadStatus('loading');
+    const { googleAppsScriptUrl } = programContext;
+
+    if (!googleAppsScriptUrl) {
+        setLoadStatus('error');
+        alert("Please provide the Web App URL.");
+        return;
+    }
+
+    try {
+        // Fetching with a timestamp to prevent caching
+        const response = await fetch(`${googleAppsScriptUrl}?action=read&t=${Date.now()}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            // Gracefully handle the case where the script works but the sheet is empty
+            if (data.error === "No data found") {
+                alert("Connected to Google Sheet successfully!\n\nHowever, the sheet is currently empty. Please click 'Save Settings' to create your first entry.");
+                setLoadStatus('idle');
+                return;
+            }
+            throw new Error(data.error);
+        }
+
+        console.log("Loaded data:", data);
+
+        setProgramContext(prev => ({
+            ...prev,
+            applicantName: data.applicantName || prev.applicantName,
+            targetProgramName: data.targetProgramName || prev.targetProgramName,
+            opportunityContext: data.opportunityContext || prev.opportunityContext,
+            submissionDeadline: data.submissionDeadline || prev.submissionDeadline,
+            coreQualities: data.coreQualities ? data.coreQualities.split(", ") : prev.coreQualities,
+            specificAnecdotes: data.specificAnecdotes ? data.specificAnecdotes.split(" | ") : prev.specificAnecdotes,
+            // Clear questions to prompt regeneration with the fresh data unless we want to persist them in the future
+            customQuestions: [] 
+        }));
+
+        setLoadStatus('success');
+        setTimeout(() => setLoadStatus('idle'), 3000);
+
+    } catch (e: any) {
+        console.error("Load failed:", e);
+        // Only show the scary alert if it's a real connection/script error
+        const errorMessage = e.message || e.toString();
+        alert(`Failed to load data: ${errorMessage}\n\nTroubleshooting:\n1. Ensure 'Who has access' is set to 'Anyone' in your Google Script deployment.\n2. Ensure you have saved data at least once.`);
+        setLoadStatus('error');
+        setTimeout(() => setLoadStatus('idle'), 3000);
     }
   };
 
@@ -257,24 +315,42 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ programContext, setProgramCon
                 />
             </div>
             <p className="text-xs text-green-700 mb-4 bg-green-100 p-2 rounded border border-green-200">
-                <strong>Important:</strong> Ensure your Google Script deployment has <em>"Who has access"</em> set to <strong>"Anyone"</strong>. Otherwise, the app cannot save data.
+                <strong>Important:</strong> Ensure your Google Script deployment has <em>"Who has access"</em> set to <strong>"Anyone"</strong> and includes the new <code>doGet()</code> function.
             </p>
             
-            <button
-                onClick={saveToSheets}
-                disabled={saveStatus === 'saving'}
-                className={`w-full py-2 rounded-xl font-bold text-sm transition-all ${
-                    saveStatus === 'saving' ? 'bg-gray-300 text-gray-500' :
-                    saveStatus === 'success' ? 'bg-green-600 text-white' :
-                    saveStatus === 'error' ? 'bg-red-500 text-white' :
-                    'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-            >
-                {saveStatus === 'saving' ? 'Saving...' : 
-                 saveStatus === 'success' ? 'Saved!' : 
-                 saveStatus === 'error' ? 'Failed' :
-                 'Save Configuration'}
-            </button>
+            <div className="flex gap-3">
+                <button
+                    onClick={saveToSheets}
+                    disabled={saveStatus === 'saving' || loadStatus === 'loading'}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+                        saveStatus === 'saving' ? 'bg-gray-300 text-gray-500' :
+                        saveStatus === 'success' ? 'bg-green-600 text-white' :
+                        saveStatus === 'error' ? 'bg-red-500 text-white' :
+                        'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                >
+                    {saveStatus === 'saving' ? 'Saving...' : 
+                    saveStatus === 'success' ? 'Saved!' : 
+                    saveStatus === 'error' ? 'Failed' :
+                    'Save Settings'}
+                </button>
+
+                <button
+                    onClick={loadFromSheets}
+                    disabled={loadStatus === 'loading' || saveStatus === 'saving'}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+                        loadStatus === 'loading' ? 'bg-gray-300 text-gray-500' :
+                        loadStatus === 'success' ? 'bg-blue-600 text-white' :
+                        loadStatus === 'error' ? 'bg-red-500 text-white' :
+                        'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    }`}
+                >
+                    {loadStatus === 'loading' ? 'Loading...' : 
+                    loadStatus === 'success' ? 'Loaded!' : 
+                    loadStatus === 'error' ? 'Failed' :
+                    'Load Latest Data'}
+                </button>
+            </div>
         </div>
 
         <div className="pt-4 space-y-3">

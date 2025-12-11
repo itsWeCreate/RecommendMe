@@ -149,7 +149,8 @@ const RecommenderTool: React.FC<RecommenderToolProps> = ({ programContext, setAp
       otherRelationship: '' 
   });
   
-  const [inputMode, setInputMode] = useState<InputMode>(null);
+  // Default to text mode to show the written form immediately
+  const [inputMode, setInputMode] = useState<InputMode>('text');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [letter, setLetter] = useState("");
@@ -391,12 +392,10 @@ const RecommenderTool: React.FC<RecommenderToolProps> = ({ programContext, setAp
                 Written Response
                 </button>
                 <button
-                onClick={() => setInputMode("audio")}
-                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-                    inputMode === 'audio' ? 'bg-white text-cyan-600 shadow-md' : 'text-gray-500 hover:text-gray-700'
-                }`}
+                disabled
+                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-200 text-gray-400 cursor-not-allowed`}
                 >
-                Voice Mode
+                Voice Mode (Disabled)
                 </button>
             </div>
 
@@ -546,6 +545,14 @@ const RecommenderTool: React.FC<RecommenderToolProps> = ({ programContext, setAp
                                 Final Draft
                             </h2>
                             <div className="flex gap-2">
+                                <a 
+                                    href="https://chatgpt.com/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                    Refine with ChatGPT ↗
+                                </a>
                                 <button 
                                     onClick={handleDownload}
                                     className="text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors flex items-center gap-1"
